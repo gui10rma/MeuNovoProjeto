@@ -11,22 +11,19 @@ import {
     Platform,
     Alert
 } from 'react-native';
-// Importa o tipo ScreenName do App.tsx (O caminho '../../App' assume que App.tsx está na raiz)
-import { ScreenName } from '../../App'; 
+import { useNavigation } from '@react-navigation/native';
+// ✅ IMPORT CORRETO: Importa a instância do Axios
+import api from '../lib/api';
 
-const API_BASE_URL = 'http://192.168.0.39:3000'; 
+// ❌ REMOVIDO: A constante API_BASE_URL (agora configurada em src/lib/api.ts)
+// const API_BASE_URL = 'http://192.168.0.39:3000'; 
+
 const TEXT_COLOR_BASE = '#00FFFF';
 const GLOW_COLOR_ON = 'rgba(0, 255, 255, 1.0)';
 const GLOW_COLOR_OFF = 'rgba(0, 255, 255, 0.2)';
 
-// 1. Define o tipo das props que o RegistrationScreen espera receber
-type RegistrationScreenProps = {
-    navigateTo: (screen: ScreenName) => void;
-};
-
-// 2. Aplica o tipo de props ao componente
-const RegistrationScreen: React.FC<RegistrationScreenProps> = ({ navigateTo }) => {
-    // Estados para o brilho, inputs e loading
+const RegistrationScreen = () => {
+    const navigation = useNavigation();
     const [currentGlowColor, setCurrentGlowColor] = useState(GLOW_COLOR_ON);
     const [loading, setLoading] = useState(false);
     const [name, setName] = useState('');
@@ -36,51 +33,52 @@ const RegistrationScreen: React.FC<RegistrationScreenProps> = ({ navigateTo }) =
     // Efeito de brilho
     useEffect(() => {
         const interval = setInterval(() => {
-            setCurrentGlowColor(prev => 
+            setCurrentGlowColor(prev =>
+                // ✅ CORREÇÃO AQUI: GLOW_COLOR_ON em vez de GLOL_COLOR_ON
                 prev === GLOW_COLOR_ON ? GLOW_COLOR_OFF : GLOW_COLOR_ON
             );
         }, 400);
         return () => clearInterval(interval);
     }, []);
 
-    // Lógica de Registro
+    // Lógica de Registro usando AXIOS
     const handleRegister = async () => {
         if (loading) return;
         if (!name || !email || !password) {
-            Alert.alert("Erro", "Todos os campos são obrigatórios."); 
+            Alert.alert("Erro", "Todos os campos são obrigatórios.");
             return;
         }
         setLoading(true);
 
         try {
-            const response = await fetch(`${API_BASE_URL}/usuarios/registrar`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ nome: name, email, senha: password }),
+            // ✅ Chamada usando api.post (Axios)
+            await api.post('/usuarios/registrar', {
+                nome: name,
+                email,
+                senha: password
             });
 
-            const data = await response.json();
+            // SUCESSO
+            Alert.alert("Sucesso!", "Registro realizado com sucesso! Faça login.");
+            navigation.navigate('Login');
 
-            if (response.ok) {
-                Alert.alert("Sucesso!", data.mensagem || "Registro realizado com sucesso!");
-                
-                // 3. NAVEGA DE VOLTA PARA A TELA DE LOGIN
-                navigateTo('Login');
-                
-            } else {
-                Alert.alert("Falha no Registro", data.mensagem || "Ocorreu um erro.");
-            }
-        } catch (error) {
-            Alert.alert("Erro de Conexão", "Não foi possível conectar ao servidor.");
+        } catch (err: any) {
+            // Trata erros de resposta HTTP (4xx/5xx) ou erros de rede/timeout
+            const msg = err?.response?.data?.mensagem ||
+                err?.message ||
+                "Falha na conexão ou Timeout. Verifique a API e o Firewall.";
+
+            Alert.alert("Falha no Registro", msg);
+            console.error("Erro de Registro (Axios):", err);
+
         } finally {
+            // Garante que o estado de loading sempre volte para falso
             setLoading(false);
         }
     };
 
-    // Lógica de Navegação para Login
     const handleNavigateToLogin = () => {
-        // 4. NAVEGA DE VOLTA PARA A TELA DE LOGIN
-        navigateTo('Login');
+        navigation.navigate('Login');
     };
 
     return (
@@ -89,7 +87,7 @@ const RegistrationScreen: React.FC<RegistrationScreenProps> = ({ navigateTo }) =
             style={styles.background}
         >
             <StatusBar barStyle="light-content" />
-            
+
             <KeyboardAvoidingView
                 style={styles.overlay}
                 behavior={Platform.OS === "ios" ? "padding" : "height"}
@@ -128,9 +126,9 @@ const RegistrationScreen: React.FC<RegistrationScreenProps> = ({ navigateTo }) =
                         secureTextEntry
                         editable={!loading}
                     />
-                    
-                    <TouchableOpacity 
-                        style={[styles.button, styles.buttonPrimary]} 
+
+                    <TouchableOpacity
+                        style={[styles.button, styles.buttonPrimary]}
                         onPress={handleRegister}
                         disabled={loading}
                     >
@@ -140,7 +138,10 @@ const RegistrationScreen: React.FC<RegistrationScreenProps> = ({ navigateTo }) =
                     </TouchableOpacity>
 
                     <TouchableOpacity style={styles.loginLink} onPress={handleNavigateToLogin}>
-                        <Text style={styles.loginLinkText}>Já tem uma conta? **Faça Login**</Text>
+                        <Text style={styles.loginLinkText}>
+                            Já tem uma conta?
+                            <Text style={{ fontWeight: 'bold' }}> Faça Login</Text>
+                        </Text>
                     </TouchableOpacity>
                 </View>
             </KeyboardAvoidingView>
@@ -148,7 +149,7 @@ const RegistrationScreen: React.FC<RegistrationScreenProps> = ({ navigateTo }) =
     );
 };
 
-// Estilos (sem alterações)
+// Estilos
 const styles = StyleSheet.create({
     background: {
         flex: 1,
@@ -166,11 +167,11 @@ const styles = StyleSheet.create({
     titleFuturistic: {
         fontSize: 36,
         fontWeight: '900',
-        color: TEXT_COLOR_BASE, 
+        color: TEXT_COLOR_BASE,
         textShadowOffset: { width: 0, height: 0 },
         textShadowRadius: 15,
         fontFamily: Platform.OS === 'ios' ? 'Courier New' : 'monospace',
-        letterSpacing: 4, 
+        letterSpacing: 4,
         marginBottom: 30,
     },
     formContainer: {

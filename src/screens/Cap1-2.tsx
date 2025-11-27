@@ -1,4 +1,4 @@
-import React, { useState } from 'react'; // Não precisamos mais do 'useEffect'
+import React, { useState } from 'react';
 import {
     StyleSheet,
     View,
@@ -6,48 +6,51 @@ import {
     ImageBackground,
     Image,
     StatusBar,
-    Pressable
+    Pressable,
+    TouchableOpacity 
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-import { TouchableOpacity } from 'react-native';
 
-
-
-// --- Constantes das Imagens (Atualizadas) ---
-// 1. Fundo atualizado para 'neonm1.jpg'
-const neonBgImage = require('../../assets/neonm1.jpg'); 
-// 2. Apenas o avatar padrão é necessário
+// --- Constantes das Imagens ---
+const neonBgImage = require('../../assets/neonm1.jpg');
 const lexiAvatarImage = require('../../assets/lexi_avatar.png');
 // ------------------------------
 
 // --- Novas Falas ---
 const introDialogues = [
-    "O Paradoxo acredita que apenas a 'lógica perfeita' é digna de acessar o núcleo do conhecimento.", // 0
-    "E, para provar isso, ele transformou todo o meu programa de ensino em um campo minado de desafios de programação. Cada módulo, cada conceito, agora é um portão trancado.", // 1
-    "Eu não consigo combatê-lo daqui de fora, ele é inteligente demais e se adapta a cada tentativa minha. Mas você... você está aí dentro. Você é meus olhos, minhas mãos e meu cérebro na linha de frente.", // 2
-    "O que me diz, Coder? Pronto(a) para começar a sua ascensão?" // 3
+    "O Paradoxo acredita que apenas a 'lógica perfeita' é digna de acessar o núcleo do conhecimento.",
+    "E, para provar isso, ele transformou todo o meu programa de ensino em um campo minado de desafios de programação. Cada módulo, cada conceito, agora é um portão trancado.",
+    "Eu não consigo combatê-lo daqui de fora, ele é inteligente demais e se adapta a cada tentativa minha. Mas você... você está aí dentro. Você é meus olhos, minhas mãos e meu cérebro na linha de frente.",
+    "O que me diz, Coder? Pronto(a) para começar a sua ascensão?" // 3 (Última Fala)
 ];
 // ---------------------
-// Nome do componente alterado para evitar conflito
-const ArcanumIntroScreen: React.FC = () => {
+
+const ArcanumIntroScreen = () => {
     const [dialogueIndex, setDialogueIndex] = useState(0);
+    // 🚨 Certifique-se de tipar corretamente se estiver usando TypeScript
     const navigation = useNavigation();
 
     const handleScreenPress = () => {
         const nextIndex = dialogueIndex + 1;
 
+        // Se o diálogo terminou (estamos na última fala), não faz nada ao tocar,
+        // pois o botão "Começar" aparece e assume a navegação.
         if (nextIndex >= introDialogues.length) {
-            console.log("Fim do diálogo de introdução! Navegando para a Missão 1...");
-            return; 
+            // console.log("Fim do diálogo de introdução! O botão 'Começar' está visível.");
+            return;
         }
 
         setDialogueIndex(nextIndex);
     };
 
+    // Verifica se é a última fala para mostrar o botão "Começar"
+    const isLastDialogue = dialogueIndex === introDialogues.length - 1;
+
     return (
         <ImageBackground source={neonBgImage} style={styles.background}>
             <StatusBar barStyle="light-content" />
 
+            {/* O Pressable permite que o usuário avance o diálogo tocando em qualquer lugar */}
             <Pressable style={styles.overlay} onPress={handleScreenPress}>
                 <View style={styles.avatarContainer}>
                     <Image
@@ -60,22 +63,27 @@ const ArcanumIntroScreen: React.FC = () => {
                     <Text style={styles.dialogText}>
                         {introDialogues[dialogueIndex]}
                     </Text>
+                    {!isLastDialogue && (
+                        <Text style={styles.tapPrompt}>
+                            [ TOQUE PARA CONTINUAR ]
+                        </Text>
+                    )}
                 </View>
             </Pressable>
 
-            {dialogueIndex === introDialogues.length - 1 && (
+            {/* Botão "Começar" aparece apenas na última fala */}
+            {isLastDialogue && (
                 <TouchableOpacity
                     style={styles.button}
-                    onPress={() => navigation.navigate('Mission1')}
+                    // ✅ AÇÃO: Navega para a tela Mission1 (Hub de Missões)
+                    onPress={() => navigation.navigate('Mission1' as any)} 
                 >
                     <Text style={styles.buttonText}>Começar</Text>
                 </TouchableOpacity>
             )}
         </ImageBackground>
     );
-}; // <-- ESSA CHAVE E PONTO E VÍRGULA ESTÃO FALTANDO
-
-
+}; // <--- FECHAMENTO CORRETO DO COMPONENTE
 
 const styles = StyleSheet.create({
     background: {
@@ -85,18 +93,16 @@ const styles = StyleSheet.create({
     },
     overlay: {
         flex: 1,
-        backgroundColor: 'rgba(0, 0, 0, 0.4)', // Leve escurecida no fundo
+        backgroundColor: 'rgba(0, 0, 0, 0.4)',
         justifyContent: 'center',
         alignItems: 'center',
         padding: 10,
     },
-    // 7. Estilo 'redFlashOverlay' REMOVIDO
     avatarContainer: {
         flex: 3,
         justifyContent: 'center',
         alignItems: 'center',
         width: '100%',
-        // zIndex não é mais necessário
     },
     avatar: {
         width: 600,
@@ -107,43 +113,49 @@ const styles = StyleSheet.create({
     dialogContainer: {
         flex: 1,
         width: '95%',
-        // Usei a mesma cor rosa do diálogo anterior que você tinha
-        backgroundColor: 'rgba(255, 105, 180, 0.80)', 
+        backgroundColor: 'rgba(255, 105, 180, 0.80)',
         borderRadius: 15,
         borderWidth: 2,
         borderColor: 'rgba(255, 255, 255, 0.7)',
         padding: 20,
-        justifyContent: 'center',
+        justifyContent: 'space-between', // Ajustado para dar espaço ao prompt de toque
         marginBottom: 20,
-        // zIndex não é mais necessário
     },
     dialogText: {
         color: '#FFFFFF',
         fontSize: 18,
-        // Você pode adicionar uma fonte customizada aqui se quiser
-        // fontFamily: 'SuaFonteCustomizada', 
+        fontFamily: 'monospace',
         fontWeight: 'bold',
         textAlign: 'center',
         textShadowColor: 'rgba(0, 0, 0, 0.5)',
         textShadowOffset: { width: 1, height: 1 },
         textShadowRadius: 2,
     },
+    tapPrompt: {
+        color: 'rgba(255, 255, 255, 0.6)',
+        fontSize: 12,
+        fontFamily: 'monospace',
+        textAlign: 'right',
+        marginTop: 10,
+    },
     button: {
-    marginTop: 20,
-    paddingVertical: 10,
-    paddingHorizontal: 25,
-    backgroundColor: 'rgba(0, 255, 255, 0.2)',
-    borderColor: '#00FFFF',
-    borderWidth: 2,
-    borderRadius: 20,
-    alignSelf: 'center',
-},
-buttonText: {
-    color: '#FFFFFF',
-    fontSize: 18,
-    fontWeight: 'bold',
-    textAlign: 'center',
-},
+        marginTop: 20,
+        paddingVertical: 10,
+        paddingHorizontal: 25,
+        backgroundColor: 'rgba(0, 255, 255, 0.2)',
+        borderColor: '#00FFFF',
+        borderWidth: 2,
+        borderRadius: 20,
+        alignSelf: 'center',
+        position: 'absolute', // Garante que o botão fique em cima de tudo
+        bottom: 40,
+    },
+    buttonText: {
+        color: '#FFFFFF',
+        fontSize: 18,
+        fontWeight: 'bold',
+        textAlign: 'center',
+    },
 
 });
 

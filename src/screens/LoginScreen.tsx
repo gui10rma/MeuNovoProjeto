@@ -11,23 +11,21 @@ import {
     KeyboardAvoidingView,
     Alert
 } from 'react-native';
-// Importa o tipo ScreenName do App.tsx (O caminho '../../App' assume que App.tsx está na raiz)
-import { ScreenName } from '../../App'; 
+import { useNavigation } from '@react-navigation/native';
+// ✅ IMPORT CORRETO: Importa a instância do Axios E a função de salvar/configurar o token
+import api, { setAuthToken } from '../lib/api'; 
+
 
 const APP_NAME = "A Ascensão do Coder";
-// IP Local da sua máquina
-const API_BASE_URL = 'http://192.168.0.39:3000'; 
 const TEXT_COLOR_BASE = '#000033';
 const GLOW_COLOR_ON = 'rgba(0, 255, 255, 1.0)';
 const GLOW_COLOR_OFF = 'rgba(0, 255, 255, 0.0)';
 
-// Define o tipo das props que o LoginScreen espera receber
-type LoginScreenProps = {
-    navigateTo: (screen: ScreenName) => void;
-};
+// O componente agora não recebe props de navegação
+const LoginScreen = () => {
+    // Inicializa o hook de navegação
+    const navigation = useNavigation();
 
-// Aplica o tipo de props ao componente
-const LoginScreen: React.FC<LoginScreenProps> = ({ navigateTo }) => {
     // Estados para o brilho, inputs e loading
     const [currentGlowColor, setCurrentGlowColor] = useState(GLOW_COLOR_ON);
     const [email, setEmail] = useState('');
@@ -37,14 +35,14 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigateTo }) => {
     // Efeito de brilho pulsante
     useEffect(() => {
         const interval = setInterval(() => {
-            setCurrentGlowColor(prev => 
+            setCurrentGlowColor(prev =>
                 prev === GLOW_COLOR_ON ? GLOW_COLOR_OFF : GLOW_COLOR_ON
             );
         }, 400);
         return () => clearInterval(interval);
     }, []);
 
-    // Lógica de Login e integração com a API
+    // Lógica de Login e integração com a API usando AXIOS
     const handleLogin = async () => {
         if (loading) return;
         if (!email || !password) {
@@ -54,27 +52,36 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigateTo }) => {
         setLoading(true);
 
         try {
-            const response = await fetch(`${API_BASE_URL}/usuarios/login`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ email, senha: password }),
+            // ✅ Chamada usando api.post (Axios) para o endpoint de login
+            const response = await api.post('/usuarios/login', {
+                email, 
+                senha: password
             });
 
-            const data = await response.json();
+            // O token está em response.data.token (enviado pelo seu backend Node.js)
+            const token = response.data?.token;
 
-            if (response.ok) {
-                // SUCESSO!
-                Alert.alert("Login com Sucesso!", "Bem-vindo de volta, Coder!");
-                
-                // NAVEGA PARA A TELA 'Cap1-1' (Próxima fase do jogo)
-                navigateTo('Cap1-1');
+            if (!token) throw new Error("Token de autenticação não recebido.");
 
-            } else {
-                Alert.alert("Falha no Login", data.mensagem || "Erro desconhecido.");
-            }
+            // 🚀 Ação Crítica: Salva o token de forma persistente (AsyncStorage) 
+            // e configura o header 'Authorization' para requisições futuras.
+            await setAuthToken(token); 
 
-        } catch (error) {
-            Alert.alert("Erro de Conexão", "Não foi possível conectar ao servidor.");
+            // SUCESSO!
+            Alert.alert("Login com Sucesso!", "Bem-vindo de volta, Coder!");
+
+            // NAVEGAÇÃO: Envia o usuário para a próxima tela protegida
+            navigation.navigate('Cap1_1');
+
+        } catch (err: any) {
+             // Trata erros de resposta HTTP (4xx/5xx) ou erros de rede/timeout (30s)
+             const msg = err?.response?.data?.mensagem || 
+                         err?.message || 
+                         "Falha na conexão ou Timeout. Verifique a API e o Firewall.";
+            
+            Alert.alert("Falha no Login", msg);
+            console.error("Erro de Login (Axios):", err);
+
         } finally {
             setLoading(false);
         }
@@ -82,13 +89,13 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigateTo }) => {
 
     // Lógica de Navegação para Registro
     const handleSignUp = () => {
-        // NAVEGA PARA A TELA 'Register'
-        navigateTo('Register');
+        // NAVEGAÇÃO: usa o objeto navigation
+        navigation.navigate('Register');
     };
 
     return (
         <ImageBackground
-            source={require('../../assets/background.jpg')} 
+            source={require('../../assets/background.jpg')}
             style={styles.background}
         >
             <StatusBar barStyle="light-content" />
@@ -122,9 +129,9 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigateTo }) => {
                         secureTextEntry
                         editable={!loading}
                     />
-                    
-                    <TouchableOpacity 
-                        style={[styles.button, styles.buttonPrimary]} 
+
+                    <TouchableOpacity
+                        style={[styles.button, styles.buttonPrimary]}
                         onPress={handleLogin}
                         disabled={loading}
                     >
@@ -133,8 +140,8 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigateTo }) => {
                         </Text>
                     </TouchableOpacity>
 
-                    <TouchableOpacity 
-                        style={[styles.button, styles.buttonSecondary]} 
+                    <TouchableOpacity
+                        style={[styles.button, styles.buttonSecondary]}
                         onPress={handleSignUp} // Chama a navegação
                         disabled={loading}
                     >
@@ -166,9 +173,9 @@ const styles = StyleSheet.create({
         fontWeight: '900',
         color: TEXT_COLOR_BASE,
         textShadowOffset: { width: 0, height: 0 },
-        textShadowRadius: 20, 
+        textShadowRadius: 20,
         fontFamily: Platform.OS === 'ios' ? 'Courier New' : 'monospace',
-        letterSpacing: 4, 
+        letterSpacing: 4,
         lineHeight: 45,
         marginBottom: 40,
     },
