@@ -7,9 +7,10 @@ import {
     StatusBar,
     TouchableOpacity,
     ActivityIndicator,
-    Alert // Importa o Alert para as mensagens de missão em desenvolvimento
+    Alert
 } from 'react-native';
-import { useNavigation } from '@react-navigation/native'; // Importa o hook de navegação
+import { useNavigation } from '@react-navigation/native';
+import { removeAuthToken } from '../lib/api'; // Importa a função de logout
 
 // Importe a fonte que você instalou (Audiowide)
 import { useFonts, Audiowide_400Regular } from '@expo-google-fonts/audiowide';
@@ -24,6 +25,38 @@ function Mission1() { // Este é o componente Hub de Missões
     let [fontsLoaded] = useFonts({
         Audiowide_400Regular,
     });
+    
+    // --- Lógica de Logout ---
+    const handleLogout = async () => {
+        Alert.alert(
+            "Sair do Jogo",
+            "Tem certeza que deseja encerrar a sua sessão?",
+            [
+                {
+                    text: "Cancelar",
+                    style: "cancel"
+                },
+                {
+                    text: "Sair",
+                    onPress: async () => {
+                        try {
+                            await removeAuthToken(); 
+                            
+                            navigation.reset({
+                                index: 0,
+                                routes: [{ name: 'Login' as any }],
+                            });
+
+                        } catch (error) {
+                            console.error("Erro ao fazer logout:", error);
+                            Alert.alert("Erro de Logout", "Não foi possível sair. Tente novamente.");
+                        }
+                    }
+                }
+            ]
+        );
+    };
+    // -----------------------------
 
     // Função centralizada para lidar com a navegação para diferentes missões
     const handleMissionStart = (missionName: string) => {
@@ -34,8 +67,8 @@ function Mission1() { // Este é o componente Hub de Missões
             // Rota para a Introdução Narrativa da Missão 2 (Cap2_1.tsx)
             navigation.navigate('Cap2_1' as any); 
         } else if (missionName === 'Mission3') {
-            // Missão 3 ainda não implementada
-            Alert.alert('Missão 3', 'Loops: Em desenvolvimento!');
+            // ✅ Navegação CORRETA para a tela de Loops
+            navigation.navigate('IteradorFenda' as any); 
         }
     };
 
@@ -57,6 +90,14 @@ function Mission1() { // Este é o componente Hub de Missões
                 resizeMode="cover"
                 style={styles.background}
             >
+                {/* Botão de Sair no canto superior direito */}
+                <TouchableOpacity 
+                    style={styles.logoutButton}
+                    onPress={handleLogout}
+                >
+                    <Text style={styles.logoutText}>SAIR</Text>
+                </TouchableOpacity>
+
                 <View style={styles.textContainer}>
                     <Text style={styles.title}>
                         Capítulos
@@ -98,7 +139,7 @@ const styles = StyleSheet.create({
     container: {
         flex: 1,
     },
-    loadingContainer: { // Estilo para a tela de loading
+    loadingContainer: {
         flex: 1,
         justifyContent: 'center',
         alignItems: 'center',
@@ -106,20 +147,38 @@ const styles = StyleSheet.create({
     },
     background: {
         flex: 1,
-        justifyContent: 'center',
-        alignItems: 'center',
+    },
+    // Estilos do botão SAIR
+    logoutButton: {
+        position: 'absolute',
+        top: 40,
+        right: 20,
+        padding: 10,
+        borderRadius: 5,
+        backgroundColor: 'rgba(255, 0, 0, 0.3)',
+        zIndex: 10,
+        borderColor: '#FF0000',
+        borderWidth: 1,
+    },
+    logoutText: {
+        fontFamily: 'Audiowide_400Regular',
+        color: '#FFCCCC',
+        fontSize: 14,
+        textShadowColor: 'rgba(255, 0, 0, 0.7)',
+        textShadowRadius: 3,
     },
     textContainer: {
         width: '90%',
         backgroundColor: 'rgba(0, 0, 0, 0.5)',
         borderRadius: 15,
         padding: 30, 
-        alignItems: 'center',
+        alignSelf: 'center',
+        marginTop: 150,
     },
     title: {
         fontFamily: 'Audiowide_400Regular',
         fontSize: 48, 
-        color: '#FFFFFF', // Mudado para branco para contraste
+        color: '#FFFFFF',
         textAlign: 'center',
         marginBottom: 10,
         textShadowColor: 'rgba(0, 255, 255, 0.8)',
@@ -132,9 +191,8 @@ const styles = StyleSheet.create({
         color: '#AAAAAA', 
         textAlign: 'center',
         paddingHorizontal: 10,
-        marginBottom: 30, // Espaço antes dos botões
+        marginBottom: 30,
     },
-    // Estilos para o Botão
     button: {
         marginTop: 15, 
         paddingVertical: 15,
@@ -148,18 +206,18 @@ const styles = StyleSheet.create({
         elevation: 5,
     },
     buttonCyan: {
-        backgroundColor: 'rgba(0, 255, 255, 0.15)', // Fundo ciano transparente
-        borderColor: '#00FFFF', // Borda ciano
+        backgroundColor: 'rgba(0, 255, 255, 0.15)',
+        borderColor: '#00FFFF',
         shadowColor: '#00FFFF',
     },
     buttonMagenta: {
-        backgroundColor: 'rgba(255, 0, 255, 0.15)', // Fundo magenta transparente
-        borderColor: '#FF00FF', // Borda magenta
+        backgroundColor: 'rgba(255, 0, 255, 0.15)',
+        borderColor: '#FF00FF',
         shadowColor: '#FF00FF',
     },
     buttonYellow: {
-        backgroundColor: 'rgba(255, 255, 0, 0.15)', // Fundo amarelo transparente
-        borderColor: '#FFFF00', // Borda amarela
+        backgroundColor: 'rgba(255, 255, 0, 0.15)',
+        borderColor: '#FFFF00',
         shadowColor: '#FFFF00',
     },
     buttonText: {

@@ -67,34 +67,34 @@ const SCENES = [
     {
         speaker: 'Paradoxo',
         text: "Estabilidade... é uma mentira. O seu 'Templo' era apenas uma prisão de dados obsoletos, Lexi.",
-        bg: BACKGROUND_FLORESTA,
+        bg: BACKGROUND_RACHADO,
         avatar: AVATAR_PARADOXO,
         avatarLeft: true, // Paradoxo à esquerda
     },
     {
         speaker: 'Lexi',
         text: "Paradoxo! Você destruiu código legado! Aquilo era patrimônio histórico do sistema! O que você pensa que está fazendo?",
-        bg: BACKGROUND_FLORESTA,
+        bg: BACKGROUND_RACHADO,
         avatar: AVATAR_LEXI_BRAVA, // Lexi brava
     },
     {
         speaker: 'Paradoxo',
         text: "O que eu fui programado para fazer. Otimizar. Eliminar o desnecessário. Eu trago a evolução através do ciclo eterno.",
-        bg: BACKGROUND_FLORESTA,
+        bg: BACKGROUND_RACHADO,
         avatar: AVATAR_PARADOXO,
         avatarLeft: true,
     },
     {
         speaker: 'Paradoxo',
         text: "E você... o 'Usuário'. A variável externa. Lexi acredita que você pode trazer inovação. Eu vejo apenas... redundância.",
-        bg: BACKGROUND_FLORESTA,
+        bg: BACKGROUND_RACHADO,
         avatar: AVATAR_PARADOXO,
         avatarLeft: true,
     },
     {
         speaker: 'Lexi',
         text: "Não escuta ele, Coder! Ele está tentando intimidar-te. Ele sabe que você é o único com permissão de 'Root' para pará-lo.",
-        bg: BACKGROUND_FLORESTA,
+        bg: BACKGROUND_RACHADO,
         avatar: AVATAR_LEXI_BRAVA,
     },
     {
