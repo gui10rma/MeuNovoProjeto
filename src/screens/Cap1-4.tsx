@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
     StyleSheet,
     View,
@@ -7,16 +7,21 @@ import {
     ImageBackground,
     StatusBar,
     ScrollView,
-    TextInput,
-    KeyboardAvoidingView,
     Platform, 
-    Alert // Importa Alert para as mensagens de erro do minigame
+    Alert,
+    Pressable, // ✅ Adicionado para capturar o toque na tela
+    // 🚨 CORREÇÃO AQUI: Adiciona KeyboardAvoidingView
+    KeyboardAvoidingView,
+    // 🚨 CORREÇÃO AQUI: Adiciona TextInput
+    TextInput 
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 
-// ✅ CORREÇÃO FINAL: Variáveis locais que carregam os assets
+// ✅ CONSTANTES DAS IMAGENS LOCAIS
 const clubBaladaImage = require('../../assets/lexi_balada.jpg'); 
 const clubHologramaImage = require('../../assets/lexi_holograma.jpg'); 
+// ❌ REMOVIDO: junkbox e bar (não pertencem a esta cena, e causam referência incorreta)
+
 
 // --- ESTÁGIOS DA CENA ---
 const SCENE = {
@@ -29,14 +34,12 @@ const SCENE = {
 // Valor correto do BPM (Batidas Por Minuto) para o desafio
 const CORRECT_BPM_VALUE = 128;
 
-// Diálogo atualizado
 const dialogue = [
     { speaker: 'Lexi', text: "SENTES ESSE RITMO? É TUDO MATEMÁTICA! A música é só um algoritmo bem executado! Eu adoro este lugar. Aqui, cada batida é uma instrução executada, cada drop é uma função chamada no momento perfeito. É o único sítio onde um loop infinito é uma coisa boa!" },
     { speaker: 'System', text: "De repente, as luzes estroboscópicas congelam numa cor branca ofuscante e os dançarinos holográficos começam a \"glitchar\", movendo-se em câmara lenta enquanto a música continua rápida." },
     { speaker: 'Lexi', text: "(Grita por cima da música) LAG! Temos um problema de renderização! O sistema de luzes não está a acompanhar o áudio. O clock do processador está dessincronizado!" },
 ];
 
-// Conclusão atualizada
 const conclusionDialogue = [
     { speaker: 'Lexi', text: "Isso foi épico! Sincronização perfeita. Tu tens ritmo de código, parceiro(a)! Se consegues lidar com esta velocidade, a 'Floresta dos Ecos' vai ser um passeio no parque. Vamos dançar mais um bocado antes de voltarmos para a realidade!" },
 ];
@@ -49,21 +52,21 @@ const ClubScreen = () => {
     const [userInput, setUserInput] = useState('');
     const [challengeAttempted, setChallengeAttempted] = useState(false);
 
-    // Avança o diálogo
+    // ✅ FUNÇÃO PRINCIPAL: Avança o diálogo ao toque
     const advanceDialogue = () => {
+        // Se estiver no diálogo introdutório
         if (sceneStage === SCENE.INTRO) {
             if (dialogueIndex < dialogue.length - 1) {
                 setDialogueIndex(dialogueIndex + 1);
             } else {
-                // Vai para o desafio
                 setSceneStage(SCENE.CHALLENGE);
             }
         } 
+        // Se estiver no diálogo final (após o desafio)
         else if (sceneStage === SCENE.FIXED) {
             if (dialogueIndex < conclusionDialogue.length - 1) {
                 setDialogueIndex(dialogueIndex + 1);
             } else {
-                // Se o diálogo final terminou, vai para o botão de conclusão
                 setSceneStage(SCENE.CONCLUSION);
             }
         }
@@ -84,20 +87,35 @@ const ClubScreen = () => {
         }
     };
 
+    const handleBackToMissions = () => {
+        navigation.navigate('Mission1' as any);
+    }
+
+
     const renderCurrentScene = () => {
-        // --- ESTÁGIO DE CONCLUSÃO FINAL (BOTão DE RETORNO) ---
+        
+        // --- ESTÁGIO DE CONCLUSÃO FINAL (BOTÃO DE RETORNO) ---
         if (sceneStage === SCENE.CONCLUSION) {
             return (
-                <View style={styles.dialogueBox}>
-                    <Text style={styles.speakerText}>{'[FIM DA CENA]'}</Text>
-                    <Text style={styles.dialogueText}>
-                        Você terminou a interação VIP com Lexi. Avance para o próximo capítulo!
-                    </Text>
+                // 🚨 CONTAINER CENTRALIZADO PARA O BOTÃO
+                <View style={styles.conclusionContainer}>
+                    <View style={styles.dialogueBox}>
+                        <Text style={styles.speakerText}>{'[FIM DA CENA]'}</Text>
+                        <Text style={styles.dialogText}>
+                            Você terminou a interação VIP com Lexi. Avance para o próximo capítulo!
+                        </Text>
+                        {/* Prompt de Toque */}
+                        <Text style={styles.tapPrompt}>
+                            [ TOQUE PARA CONTINUAR ]
+                        </Text>
+                    </View>
+                    
+                    {/* BOTÃO CENTRALIZADO */}
                     <TouchableOpacity 
-                        style={styles.actionButton} 
-                        onPress={() => navigation.navigate('Mission1' as any)} // ✅ RETORNA À TELA DE MISSÕES
+                        style={styles.centeredActionButton} 
+                        onPress={handleBackToMissions}
                     >
-                        <Text style={styles.buttonText}>Voltar ao Hub de Missões</Text>
+                        <Text style={styles.centeredButtonText}>Voltar ao Hub de Missões</Text>
                     </TouchableOpacity>
                 </View>
             );
@@ -108,15 +126,21 @@ const ClubScreen = () => {
             
             const currentDialogueList = (sceneStage === SCENE.INTRO) ? dialogue : conclusionDialogue;
             const currentDialog = currentDialogueList[dialogueIndex];
+            
+            const isLastDialogue = dialogueIndex === currentDialogueList.length - 1;
 
             return (
-                <View style={styles.dialogueBox}>
-                    <Text style={styles.speakerText}>{currentDialog.speaker}:</Text>
-                    <Text style={styles.dialogueText}>{currentDialog.text}</Text>
-                    
-                    <TouchableOpacity style={styles.actionButton} onPress={advanceDialogue}>
-                        <Text style={styles.buttonText}>Continuar >></Text>
-                    </TouchableOpacity>
+                // O Pressable principal da tela gerencia o toque para continuar
+                <View style={styles.dialogContainer}>
+                    <View style={styles.dialogueBox}>
+                        <Text style={styles.speakerText}>{currentDialog.speaker}:</Text>
+                        <Text style={styles.dialogText}>{currentDialog.text}</Text>
+                        
+                        {/* Prompt de Toque */}
+                        <Text style={styles.tapPrompt}>
+                            {isLastDialogue ? '[ TOQUE PARA CONTINUAR ]' : '[ TOQUE PARA CONTINUAR >> ]'}
+                        </Text>
+                    </View>
                 </View>
             );
 
@@ -155,7 +179,7 @@ const ClubScreen = () => {
                     />
 
                     <TouchableOpacity style={styles.challengeOption} onPress={handleSyncChallenge} disabled={!userInput}>
-                        <Text style={styles.buttonText}>Sincronizar Clock</Text>
+                        <Text style={styles.challengeButtonText}>Sincronizar Clock</Text>
                     </TouchableOpacity>
                     
                     {/* Imagem do desafio (Holograma) */}
@@ -166,24 +190,32 @@ const ClubScreen = () => {
     };
 
     const getBackgroundImage = () => {
-        // ✅ CORREÇÃO: Usa as constantes locais CLUBHOLOGRMAIMAGE ou CLUBBALADAIMAGE
+        // Usa as constantes locais 'require' para definir o fundo
+        // 🚨 CORREÇÃO: Usando os assets corretos para esta cena (Balada/Holograma)
         if (sceneStage === SCENE.CHALLENGE) {
-            return clubHologramaImage; // Fundo Jukebox/Desafio
+            return clubHologramaImage;
         }
-        return clubBaladaImage; // Fundo Bar/Diálogo
+        return clubBaladaImage;
     }
 
 
     return (
         <ImageBackground
-            source={getBackgroundImage()}
+            source={getBackgroundImage()} // ✅ Chama a função para mudar o fundo
             style={styles.background}
             resizeMode="cover"
         >
             <StatusBar hidden />
-            <ScrollView contentContainerStyle={styles.scrollContainer}>
-                {renderCurrentScene()}
-            </ScrollView>
+            
+            {/* ✅ CONTAINER PRINCIPAL QUE GERE O TOQUE NA TELA INTEIRA PARA O DIÁLOGO */}
+            <Pressable 
+                style={styles.fullScreenOverlay} 
+                onPress={sceneStage === SCENE.INTRO || sceneStage === SCENE.FIXED ? advanceDialogue : undefined}
+            >
+                <ScrollView contentContainerStyle={styles.scrollContainer}>
+                    {renderCurrentScene()}
+                </ScrollView>
+            </Pressable>
         </ImageBackground>
     );
 };
@@ -194,123 +226,163 @@ const styles = StyleSheet.create({
         flex: 1,
         // Mantém a imagem cobrindo toda a tela para não ter bordas pretas
     },
+    fullScreenOverlay: {
+        ...StyleSheet.absoluteFillObject,
+        backgroundColor: 'transparent',
+    },
     scrollContainer: {
         flexGrow: 1,
         justifyContent: 'flex-end', // Alinha o conteúdo ao fundo
-        paddingBottom: 25, // 🚨 MUDANÇA: Adiciona padding inferior para subir o conteúdo
     },
-    // --- Estilos da Caixa de Diálogo (APLICANDO OTIMIZAÇÕES DO BARSCREEN) ---
-    dialogueBox: {
-        width: '95%',
-        padding: 10, // 🚨 REDUZIDO: Menos padding vertical
-        backgroundColor: 'rgba(0, 0, 0, 0.75)', // Mais transparente
-        borderColor: '#FF00FF', // Rosa Neon
-        borderWidth: 2,
-        borderRadius: 10,
-        margin: 8, // Margem reduzida
-        shadowColor: '#FF00FF',
-        shadowRadius: 8,
-        shadowOpacity: 0.9,
-        elevation: 8,
-    },
-    speakerText: {
-        fontSize: 16,
-        fontWeight: 'bold',
-        color: '#00FFFF', // Ciano Neon para o nome
-        marginBottom: 5,
-    },
-    dialogueText: {
-        fontSize: 16, // 🚨 REDUZIDO
-        color: '#FFFFFF',
-        marginBottom: 8, // Margem reduzida
-        lineHeight: 20,
-    },
-    actionButton: {
-        padding: 8, // Padding reduzido
-        backgroundColor: '#FF00FF',
-        borderRadius: 5,
+    
+    // ✅ NOVO: Estilo do Container que imita o seu exemplo de balão
+    dialogContainer: {
+        flex: 1,
+        justifyContent: 'flex-end',
         alignItems: 'center',
-    },
-    buttonText: {
-        color: '#FFFFFF',
-        fontWeight: 'bold',
+        width: '100%',
+        paddingBottom: 20,
     },
 
+    // 🚨 NOVO: Container para centralizar o botão de conclusão
+    conclusionContainer: {
+        flex: 1,
+        // 🚨 MUDANÇA CRÍTICA: Centraliza vertical e horizontalmente
+        justifyContent: 'center', 
+        alignItems: 'center',
+        padding: 20,
+    },
+    
+    // --- Estilos da Caixa de Diálogo (Balão) ---
+    dialogueBox: {
+        width: '95%',
+        padding: 20,
+        // 🚨 MUDANÇA: Fundo azul escuro para contraste com o branco (Volta para o Azul Neon)
+        backgroundColor: 'rgba(0, 0, 50, 0.90)', 
+        // 🚨 MUDANÇA: Borda e sombra ciano
+        borderColor: '#00FFFF',
+        borderWidth: 3,
+        borderRadius: 15, // Mais arredondado
+        margin: 10,
+        shadowColor: '#00FFFF',
+        shadowRadius: 10,
+        shadowOpacity: 1,
+        elevation: 10,
+    },
+    // 🚨 ESTILO DE LETRA MONOSPACE PARA SPEAKER
+    speakerText: {
+        fontSize: 18,
+        fontWeight: 'bold',
+        color: '#FF00FF', // Rosa Neon para contraste
+        marginBottom: 5,
+        fontFamily: 'monospace', // ✅ Monospace em todos os sistemas
+    },
+    // 🚨 ESTILO DE LETRA MONOSPACE PARA DIÁLOGO
+    dialogText: {
+        color: '#FFFFFF', // Texto branco puro
+        fontSize: 18,
+        fontFamily: 'monospace', // ✅ Monospace em todos os sistemas
+        fontWeight: 'bold',
+        textAlign: 'center',
+        // Mantendo sombra leve para melhor legibilidade
+        textShadowColor: 'rgba(0, 0, 0, 0.5)', 
+        textShadowOffset: { width: 1, height: 1 },
+        textShadowRadius: 2,
+        marginBottom: 10,
+        lineHeight: 22,
+    },
+    
+    // ✅ NOVO: Estilo para o prompt de toque
+    tapPrompt: {
+        color: '#00FFFF', // Ciano Neon
+        fontSize: 14,
+        fontWeight: 'bold',
+        textAlign: 'right',
+        marginTop: 10,
+    },
+    
     // --- Estilos do Desafio (Challenge) ---
     challengeBox: {
         width: '95%',
-        padding: 10, // 🚨 REDUZIDO: Menos padding vertical
-        // MUDANÇA: Mais transparente e com cor sutil para ver o fundo
-        backgroundColor: 'rgba(30, 0, 30, 0.65)', 
-        borderColor: '#00FFFF',
+        padding: 15,
+        backgroundColor: 'rgba(20, 20, 50, 0.85)', // Fundo escuro para desafio
+        borderColor: '#FFFF00',
         borderWidth: 2,
         borderRadius: 10,
-        margin: 8, // Margem reduzida
+        margin: 10,
         alignItems: 'center',
     },
     challengeTitle: {
-        fontSize: 20, // 🚨 REDUZIDO
+        fontSize: 22,
         fontWeight: 'bold',
-        color: '#00FFFF', // Ciano Neon
-        marginBottom: 8,
+        color: '#FFFF00', // Amarelo Neon
+        marginBottom: 10,
     },
     challengeInstruction: {
-        fontSize: 14, // 🚨 REDUZIDO
+        fontSize: 15,
         color: '#AAAAAA',
         textAlign: 'center',
-        marginVertical: 8, // Margem vertical menor
+        marginVertical: 10,
     },
     challengeCodeTitle: {
         fontSize: 13,
-        color: '#FF00FF',
-        marginTop: 5, // Margem reduzida
+        color: '#00FFFF',
+        marginTop: 8,
     },
     codeBlock: {
         width: '100%',
         backgroundColor: '#00001a',
-        padding: 5, // 🚨 REDUZIDO
+        padding: 8,
         borderRadius: 5,
-        marginBottom: 8, // Margem reduzida
     },
     codeLine: {
-        fontFamily: Platform.OS === 'ios' ? 'Courier New' : 'monospace', 
+        fontFamily: 'monospace', // ✅ Monospace em todos os sistemas
         color: '#FFFFFF',
-        fontSize: 12, // 🚨 REDUZIDO
-        lineHeight: 16,
+        fontSize: 13,
+        lineHeight: 18,
     },
     codeError: {
-        color: '#FF0000', // Vermelho
+        color: '#FF0000',
         fontWeight: 'bold',
     },
-    codeNote: {
-        color: '#FFFF00', // Amarelo
-        fontWeight: 'bold',
-    },
-    input: {
+    optionGroup: {
         width: '100%',
-        padding: 12, // 🚨 REDUZIDO
-        borderRadius: 10,
-        backgroundColor: 'rgba(255, 255, 255, 0.1)',
-        color: '#FFFFFF',
-        fontSize: 16, // 🚨 REDUZIDO
-        textAlign: 'center',
-        marginVertical: 8, // Margem reduzida
-        borderColor: '#00FFFF',
-        borderWidth: 1,
+        marginTop: 15,
     },
     challengeOption: {
-        padding: 10, // 🚨 REDUZIDO
-        backgroundColor: '#00FFFF',
+        padding: 10,
+        backgroundColor: '#FF00FF',
         borderRadius: 8,
-        marginVertical: 4, // Margem vertical reduzida
+        marginVertical: 4,
         alignItems: 'center',
-        width: '100%',
+    },
+    challengeButtonText: { // Novo estilo para o texto dos botões de desafio
+        color: '#FFFFFF',
+        fontWeight: 'bold',
     },
     imagePlaceholderText: {
         color: '#444444',
         fontSize: 10,
-        marginTop: 10, // Margem reduzida
-    }
+        marginTop: 15,
+    },
+
+    // 🚨 NOVO: Estilos para o Botão de Conclusão Centralizado
+    centeredActionButton: {
+        width: '80%',
+        padding: 15,
+        backgroundColor: '#00FFFF', // Ciano Neon
+        borderRadius: 10,
+        alignItems: 'center',
+        marginTop: 40,
+        shadowColor: '#00FFFF',
+        shadowRadius: 5,
+        elevation: 5,
+    },
+    centeredButtonText: {
+        color: '#000000',
+        fontWeight: 'bold',
+        fontSize: 18,
+    },
 });
 
 export default ClubScreen;

@@ -6,9 +6,10 @@ import {
     TouchableOpacity,
     ImageBackground,
     StatusBar,
-    // ❌ REMOVIDO: Image (não precisamos mais de avatares)
+    ScrollView,
     Alert,
-    Dimensions
+    Dimensions,
+    Pressable // ✅ Adicionado para capturar o toque na tela
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 
@@ -18,9 +19,9 @@ const BACKGROUND_LAGO_SWIM = require('../../assets/lexi_lagoa.jpg'); // Fundo co
 
 // --- ESTÁGIOS DA CENA ---
 const SCENE = {
-    ENTRANCE: 0,      // Chegada na margem (Sem Avatar)
-    IN_WATER: 1,      // Conversa na água (Sem Avatar)
-    CONCLUSION: 2,    // Fim da cena
+    ENTRANCE: 0,      // Chegada na margem (Tem botão de ação)
+    IN_WATER: 1,      // Conversa na água (Tem diálogo para avançar por toque)
+    CONCLUSION: 2,    // Fim da cena (Tem botão de retorno)
 };
 
 const dialogueEntrance = [
@@ -45,85 +46,93 @@ const LagoaRelaxarScreen = () => {
         return [{ speaker: '[FIM]', text: "A cena termina com vocês a nadar, deixando para trás o stress da batalha." }];
     }
 
-    // Avança o estágio, simulando a ação de Lexi pular
+    // Função de ação (usada por botão para pular/retornar)
     const handleAction = () => {
-        if (sceneStage === SCENE.ENTRANCE) {
-            // Fim do diálogo de entrada -> Transição para a água
-            Alert.alert("Lexi pula!", "Toque para iniciar a conversa na água.");
+         if (sceneStage === SCENE.ENTRANCE) {
+            // Ação de estágio: Mudar para a água
+            Alert.alert("Lexi pula!", "Toque na tela para iniciar a conversa na água.");
             setSceneStage(SCENE.IN_WATER);
-            setDialogueIndex(0); // Inicia o diálogo da água
-        } else if (sceneStage === SCENE.IN_WATER) {
+            setDialogueIndex(0); 
+        } else if (sceneStage === SCENE.CONCLUSION) {
+            // Ação de estágio: Navegar para Mission1
+            navigation.navigate('Mission1' as any); 
+        }
+    }
+
+    // Função para avançar o diálogo (usada pelo Pressable de tela)
+    const advanceDialogue = () => {
+        if (sceneStage === SCENE.IN_WATER) {
             // Avança o diálogo na água
             if (dialogueIndex < dialogueInWater.length - 1) {
                 setDialogueIndex(dialogueIndex + 1);
             } else {
-                // Fim da cena: Transição para o estágio de conclusão
+                // Fim da cena de diálogo: Transição para o estágio de conclusão
                 Alert.alert("Fim da Recompensa", "Recompensado com um bônus de XP!");
+                setDialogueIndex(0); // Reinicia o índice para o item único de conclusão
                 setSceneStage(SCENE.CONCLUSION);
-                // NÃO RESETAMOS O INDEX AQUI, POIS O handleAction É CHAMADO NOVAMENTE
-                // PARA O ESTÁGIO DE CONCLUSÃO
             }
-        } else if (sceneStage === SCENE.CONCLUSION) {
-            // AÇÃO NO ESTÁGIO DE CONCLUSÃO: Navegar para Mission1
-            navigation.navigate('Mission1' as any); // ✅ Volta para o Hub de Missões
         }
+        // Se estiver em ENTRANCE ou CONCLUSION, o toque na tela não faz nada, pois há um botão de ação.
     };
     
 
     const renderCurrentScene = () => {
         const currentList = getCurrentDialogueList();
         
-        // 🎯 Correção: Garante que o índice não excede o limite da lista atual.
-        // Se estiver no estágio de conclusão (que tem apenas 1 item), força o índice para 0.
         const safeIndex = (sceneStage === SCENE.CONCLUSION && dialogueIndex > 0) 
-            ? 0 
-            : dialogueIndex;
+             ? 0 
+             : dialogueIndex;
 
         const currentDialog = currentList[safeIndex];
+        const isLastInWater = sceneStage === SCENE.IN_WATER && dialogueIndex === dialogueInWater.length - 1;
         
-        // --- Diálogo e Botão de Ação ---
-        const DialogueAndActionBox = (
-            <View style={styles.dialogueBox}>
-                {/* Verifica se currentDialog está definido antes de tentar ler speaker */}
-                {currentDialog?.speaker && (
-                    <Text style={styles.speakerText}>{currentDialog.speaker}:</Text>
-                )}
-                {currentDialog?.text && (
-                    <Text style={styles.dialogueText}>{currentDialog.text}</Text>
-                )}
+        let buttonText = 'Continuar >>';
+        if (sceneStage === SCENE.ENTRANCE) {
+            buttonText = '[ Pular na Lagoa ]';
+        } else if (sceneStage === SCENE.CONCLUSION) {
+            buttonText = '[ Voltar ao Hub de Missões ]';
+        } else if (isLastInWater) {
+             buttonText = '[ Começar a Corrida ]';
+        }
 
-                <TouchableOpacity 
-                    style={styles.actionButton} 
-                    onPress={handleAction}
-                >
-                    <Text style={styles.buttonText}>
-                        {sceneStage === SCENE.ENTRANCE 
-                            ? '[ Pular na Lagoa ]' 
-                            : sceneStage === SCENE.IN_WATER 
-                                ? dialogueIndex === dialogueInWater.length - 1 ? '[ Começar a Corrida ]' : 'Continuar >>'
-                                : '[ Voltar ao Hub de Missões ]'
-                        }
-                    </Text>
-                </TouchableOpacity>
-            </View>
-        );
+        // --- Renderização Com Botão de Ação (ENTRANCE e CONCLUSION) ---
+        if (sceneStage === SCENE.ENTRANCE || sceneStage === SCENE.CONCLUSION) {
+            return (
+                // Usamos o container centralizado para o estágio final (CONCLUSION)
+                <View style={sceneStage === SCENE.CONCLUSION ? styles.conclusionContainer : styles.dialogContainer} >
+                     <View style={styles.dialogueBox}>
+                        {currentDialog?.speaker && (<Text style={styles.speakerText}>{currentDialog.speaker}:</Text>)}
+                        {currentDialog?.text && (<Text style={styles.dialogueText}>{currentDialog.text}</Text>)}
+
+                        <TouchableOpacity 
+                            style={styles.actionButton} 
+                            onPress={handleAction}
+                        >
+                            <Text style={styles.buttonText}>{buttonText}</Text>
+                        </TouchableOpacity>
+                    </View>
+                </View>
+            );
+        }
         
-        // --- RENDERIZAÇÃO PRINCIPAL ---
+        // --- Renderização Somente com Toque (IN_WATER) ---
         return (
-            <View style={styles.fullScreenTouch}>
-                {/* O espaçador agora ocupa todo o espaço que resta, empurrando o diálogo para baixo */}
-                <View style={styles.emptySpacer} /> 
-                
-                {/* Caixa de diálogo aparece no final */}
-                <View style={styles.dialogueContainer}>
-                    {DialogueAndActionBox}
+            <View style={styles.dialogContainer}>
+                <View style={styles.dialogueBox}>
+                    {currentDialog?.speaker && (<Text style={styles.speakerText}>{currentDialog.speaker}:</Text>)}
+                    {currentDialog?.text && (<Text style={styles.dialogueText}>{currentDialog.text}</Text>)}
+                    
+                    {/* Prompt de toque (substituindo o botão) */}
+                    <Text style={styles.tapPrompt}>
+                        {isLastInWater ? '[ Começar a Corrida ]' : '[ TOQUE PARA CONTINUAR >> ]'}
+                    </Text>
+                    {/* Botão de ação (Corrida) NÃO É USADO aqui, pois o toque na tela avança para CONCLUSION */}
                 </View>
             </View>
         );
     };
 
     const getBackgroundImage = () => {
-        // Define o fundo com base no estágio
         return sceneStage === SCENE.ENTRANCE ? BACKGROUND_MARGEM : BACKGROUND_LAGO_SWIM;
     }
 
@@ -135,7 +144,17 @@ const LagoaRelaxarScreen = () => {
             resizeMode="cover"
         >
             <StatusBar hidden />
-            {renderCurrentScene()}
+            
+            {/* ✅ Pressable em tela cheia (Ativo somente durante IN_WATER) */}
+            <Pressable 
+                style={styles.fullScreenOverlay} 
+                onPress={advanceDialogue}
+            >
+                {/* ScrollView for flex-end alignment */}
+                <ScrollView contentContainerStyle={styles.scrollContainer}>
+                    {renderCurrentScene()}
+                </ScrollView>
+            </Pressable>
         </ImageBackground>
     );
 };
@@ -147,52 +166,76 @@ const styles = StyleSheet.create({
         width: '100%',
         height: '100%',
     },
-    fullScreenTouch: {
-        flex: 1,
-        width: '100%',
-        justifyContent: 'space-between', // Divide espaço entre o topo e o diálogo
-        alignItems: 'center',
+    fullScreenOverlay: {
+        ...StyleSheet.absoluteFillObject,
+        backgroundColor: 'transparent',
     },
-    
-    // ✅ NOVO: Espaçador para ocupar o espaço superior
-    emptySpacer: {
-        flex: 1, // Isso faz o espaçador ocupar todo o espaço não ocupado pelo diálogo
-        width: '100%',
+    scrollContainer: {
+        flexGrow: 1,
+        justifyContent: 'flex-end', // Alinha o conteúdo ao fundo
+        paddingBottom: 20,
+        alignItems: 'center', // Centraliza a caixa de diálogo
     },
-    
-    // --- Diálogo Container ---
-    dialogueContainer: {
+     // Contêiner padrão para diálogos (na parte inferior)
+    dialogContainer: {
         width: '100%',
         paddingBottom: 20,
         alignItems: 'center',
     },
+    // Container para centralizar o botão de conclusão (USADO em SCENE.CONCLUSION)
+    conclusionContainer: {
+        flex: 1,
+        justifyContent: 'center', 
+        alignItems: 'center',
+        padding: 20,
+    },
+    
+    // --- Estilos da Caixa de Diálogo (Azul Marinho / Ciano) ---
     dialogueBox: {
         width: '95%',
         padding: 15,
-        backgroundColor: 'rgba(0, 0, 30, 0.85)', 
-        borderColor: '#00FFFF',
+        // ✅ MUDANÇA: Fundo Azul Marinho Escuro
+        backgroundColor: 'rgba(0, 0, 50, 0.85)', 
+        // ✅ MUDANÇA: Borda Ciano Neon
+        borderColor: '#00FFFF', 
         borderWidth: 2,
         borderRadius: 10,
         margin: 10,
+        // ✅ MUDANÇA: Sombra Ciano Neon
         shadowColor: '#00FFFF',
         shadowRadius: 10,
+        shadowOpacity: 1,
         elevation: 10,
     },
     speakerText: {
         fontSize: 18,
         fontWeight: 'bold',
-        color: '#FF00FF', 
+        color: '#FF00FF', // Rosa Neon para Lexi/System (Mantido para contraste)
         marginBottom: 5,
+        fontFamily: 'monospace', // ✅ Monospace adicionado
     },
     dialogueText: {
         fontSize: 16,
-        color: '#FFFFFF',
+        color: '#FFFFFF', // ✅ Branco mantido
         marginBottom: 15,
         lineHeight: 22,
+        fontFamily: 'monospace', // ✅ Monospace adicionado
     },
+    
+    // ✅ NOVO ESTILO: Prompt de toque
+    tapPrompt: {
+        color: '#00FFFF', // ✅ Ciano Neon
+        fontSize: 14,
+        fontWeight: 'bold',
+        textAlign: 'right',
+        marginTop: 5,
+        fontFamily: 'monospace', // ✅ Monospace adicionado
+    },
+
+    // --- Estilos de Ação (Para ENTRANCE e CONCLUSION) ---
     actionButton: {
         padding: 10,
-        backgroundColor: '#00FFFF',
+        backgroundColor: '#00FFFF', // ✅ Ciano Neon
         borderRadius: 5,
         alignItems: 'center',
     },
@@ -200,6 +243,7 @@ const styles = StyleSheet.create({
         color: '#000000',
         fontWeight: 'bold',
         fontSize: 16,
+        fontFamily: 'monospace', // ✅ Monospace adicionado
     },
 });
 

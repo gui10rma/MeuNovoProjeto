@@ -7,9 +7,10 @@ import {
     ImageBackground,
     StatusBar,
     ScrollView,
-    Image,
+    Image, // Importado para renderizar o avatar
     Dimensions,
-    Alert
+    Alert,
+    Pressable // ✅ Adicionado para capturar o toque na tela
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 
@@ -144,7 +145,7 @@ const Capitulo21Screen = () => {
     const advanceScene = () => {
         if (currentScene.finalScene) {
             // Ação final: Navega para a tela do Quiz de Condicionais
-            navigation.navigate('QuizCondicionais' as any); // <--- ATUALIZADO
+            navigation.navigate('QuizCondicionais' as any); 
         } else if (sceneIndex < SCENES.length - 1) {
             setSceneIndex(sceneIndex + 1);
         }
@@ -153,16 +154,14 @@ const Capitulo21Screen = () => {
     const renderAvatar = () => {
         if (!currentScene.avatar) return null;
 
-        const isLexi = currentScene.speaker !== 'Paradoxo';
-
         return (
-            // 🚨 RENDERIZAÇÃO DO AVATAR DENTRO DO CONTAINER CENTRALIZADO
+            // RENDERIZAÇÃO DO AVATAR DENTRO DO CONTAINER CENTRALIZADO
             <View style={styles.avatarCenteredContainer}>
                 <Image
                     source={currentScene.avatar}
                     style={[
                         styles.avatarImage,
-                        // 🚨 MUDANÇA APLICADA AQUI: Tamanho fixo de 400x400
+                        // Tamanho fixo de 400x400
                         { width: 400, height: 400 }
                     ]}
                     resizeMode="contain"
@@ -179,24 +178,27 @@ const Capitulo21Screen = () => {
         >
             <StatusBar hidden />
 
-            {renderAvatar()}
+            {/* ✅ Pressable em tela cheia para avançar o diálogo */}
+            <Pressable style={StyleSheet.absoluteFillObject} onPress={advanceScene}>
+                
+                {renderAvatar()}
 
-            <View style={styles.dialogueContainer}>
-                <View style={styles.dialogueBox}>
-                    <Text style={currentScene.speaker === 'Paradoxo' ? styles.speakerParadoxo : styles.speakerLexi}>
-                        {currentScene.speaker}:
-                    </Text>
-                    <Text style={styles.dialogueText}>
-                        {currentScene.text}
-                    </Text>
+                <View style={styles.dialogueContainer}>
+                    <View style={styles.dialogueBox}>
+                        <Text style={currentScene.speaker === 'Paradoxo' ? styles.speakerParadoxo : styles.speakerLexi}>
+                            {currentScene.speaker}:
+                        </Text>
+                        <Text style={styles.dialogueText}>
+                            {currentScene.text}
+                        </Text>
 
-                    <TouchableOpacity style={styles.actionButton} onPress={advanceScene}>
-                        <Text style={styles.buttonText}>
+                        {/* ✅ NOVO: Prompt de toque */}
+                        <Text style={styles.tapPrompt}>
                             {currentScene.finalScene ? 'Entrar no Abismo (Missões) >>' : 'Continuar >>'}
                         </Text>
-                    </TouchableOpacity>
+                    </View>
                 </View>
-            </View>
+            </Pressable>
         </ImageBackground>
     );
 };
@@ -206,11 +208,10 @@ const styles = StyleSheet.create({
         flex: 1,
         width: '100%',
         height: '100%',
-        // 🚨 MUDANÇA: Usaremos dois justifyContent para controlar o espaço
         justifyContent: 'space-between',
         alignItems: 'center',
     },
-    // 🚨 NOVO CONTAINER PARA CENTRALIZAR O AVATAR ACIMA DA CAIXA DE DIÁLOGO
+    // CONTAINER PARA CENTRALIZAR O AVATAR ACIMA DA CAIXA DE DIÁLOGO
     avatarCenteredContainer: {
         flex: 1, // Ocupa o espaço superior
         width: '100%',
@@ -222,17 +223,19 @@ const styles = StyleSheet.create({
         width: '100%',
         paddingBottom: 20,
         alignItems: 'center',
-        // Reduz o flex para permitir que o avatarCenteredContainer tenha mais espaço (flex: 1)
-        // Não é necessário flex aqui, pois ele está no final do componente pai (background)
+        flex: 0, 
     },
     dialogueBox: {
         width: '95%',
         padding: 15,
-        backgroundColor: 'rgba(0, 0, 0, 0.88)',
-        borderColor: '#00FFFF',
+        // Fundo em cinza escuro, como pedido
+        backgroundColor: 'rgba(0, 0, 0, 0.88)', 
+        // 🚨 MUDANÇA: Borda Vermelho Neon
+        borderColor: '#FF0000', 
         borderWidth: 2,
         borderRadius: 10,
-        shadowColor: '#00FFFF',
+        // 🚨 MUDANÇA: Sombra Vermelho Neon
+        shadowColor: '#FF0000',
         shadowRadius: 10,
         shadowOpacity: 1,
         elevation: 10,
@@ -240,39 +243,43 @@ const styles = StyleSheet.create({
     speakerLexi: {
         fontSize: 18,
         fontWeight: 'bold',
-        color: '#FF00FF', // Rosa para Lexi
+        color: '#FF00FF', // Rosa para Lexi (Mantido para contraste)
         marginBottom: 5,
+        fontFamily: 'monospace', 
     },
     speakerParadoxo: {
         fontSize: 18,
         fontWeight: 'bold',
-        color: '#FF4500', // Laranja Escuro/Vermelho para Paradoxo
+        // 🚨 Cor do Paradoxo para Vermelho Neon (Igual à borda/sombra)
+        color: '#FF0000', 
         marginBottom: 5,
+        fontFamily: 'monospace', 
     },
     dialogueText: {
         fontSize: 16,
-        color: '#FFFFFF',
+        // ✅ Cor do texto do diálogo de volta para Branco
+        color: '#FFFFFF', 
         marginBottom: 15,
         lineHeight: 22,
+        fontFamily: 'monospace', 
     },
-    actionButton: {
-        padding: 10,
-        backgroundColor: '#00FFFF',
-        borderRadius: 5,
-        alignItems: 'center',
-    },
-    buttonText: {
-        color: '#000000',
+    
+    // ESTILO: Para simular o botão "continuar" no canto
+    tapPrompt: {
+        // 🚨 Prompt de toque para Vermelho Neon
+        color: '#FF0000', 
+        fontSize: 14,
         fontWeight: 'bold',
-        fontSize: 16,
+        textAlign: 'right',
+        marginTop: 5,
+        fontFamily: 'monospace', 
     },
+    
     // --- Estilos do Avatar ---
     avatarImage: {
-        // Posição agora controlada pelo avatarCenteredContainer
-        // Removido position: 'absolute' e bottom fixo
-        marginBottom: -50, // Puxa a imagem um pouco para baixo para sobrepor a caixa de diálogo
+        // Puxa a imagem um pouco para baixo para sobrepor a caixa de diálogo
+        marginBottom: -50, 
     },
-    // Estilos avatarLeft e avatarRight (REMOVIDOS, pois não são mais necessários para centralizar)
 });
 
 export default Capitulo21Screen;
